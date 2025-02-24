@@ -27,7 +27,7 @@ func NewJamet(config map[string]*gorm.DB) *Jamet {
 
 func (met Jamet) GetData(table string, connection string) *gorm.DB {
 
-	return met.config[table].Table(table)
+	return met.config[connection].Table(table)
 }
 
 func (met Jamet) Connection(conn string) *gorm.DB {
