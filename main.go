@@ -19,6 +19,12 @@ type Jamet struct {
 	config map[string]*gorm.DB
 }
 
+func NewJamet(config map[string]*gorm.DB) *Jamet {
+	return &Jamet{
+		config:     config,
+	}
+}
+
 func (met *Jamet) GetData(table string, connection string) *gorm.DB {
 
 	return met.config[table].Table(table)
