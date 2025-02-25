@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +37,40 @@ func (met Jamet) Connection(conn string) *gorm.DB {
 	return db.Begin()
 }
 
+func (met Jamet) SinchronizeID(id string, char string, format int32) string {
+	defer ErrorLog()
+
+	var getMstRunNum map[string]interface{}
+	query := met.config[""]
+
+	db := query
+	db.Table("mst_run_nums").Where(map[string]interface{}{"val_id": id,"val_char": char}).Find(&getMstRunNum)
+
+	var value string
+	if len(getMstRunNum) != 0 {
+
+		num, err := strconv.Atoi(getMstRunNum["val_value"].(string)); 
+		if err != nil {
+			panic(err)
+		}
+
+		num = num+1;
+		db.Table("mst_run_nums").Where(map[string]interface{}{"val_id": id,"val_char": char}).Updates(map[string]interface{}{"val_value":num})
+
+		value = fmt.Sprintf("%0*d", format, num)
+	} else {
+		value = fmt.Sprintf("%0*d", format, 1)
+		InsertData(query, "mst_run_nums", map[string]interface{}{
+			"id": UUID(),
+			"val_value": 1,
+			"val_id": id,
+			"val_char": char,
+		})
+	}
+
+	return fmt.Sprintf("%s%s%s",id,char,value)
+}
+
 
 type Response struct {
 	Status  bool `json:"status"`
@@ -49,6 +84,10 @@ type DataTable struct {
 	Data            []map[string]interface{} `json:"data"`
 	RecordsFiltered int64                    `json:"recordsFiltered"`
 	RecordsTotal    int64                    `json:"recordsTotal"`
+}
+
+func UUID() string {
+	return uuid.New().String()
 }
 
 func PrintJSON(c *gin.Context, response Response) {
@@ -186,7 +225,7 @@ func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) {
 	}})
 }
 
-func InsertData(c *gin.Context, db *gorm.DB, table string, data any) any {
+func InsertData(db *gorm.DB, table string, data any) any {
 
 	result := db.Table(table).Create(data).Error
 
