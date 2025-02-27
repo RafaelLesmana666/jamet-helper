@@ -132,22 +132,6 @@ func (met Jamet) WriteCache(previx string, data any) {
 	}
 }
 
-// struct for response
-type Response struct {
-	Status  bool `json:"status"`
-	Message any  `json:"message"`
-	Data    any  `json:"data"`
-}
-
-// struct for datatable
-type DataTable struct {
-	Status          bool                     `json:"status"`
-	Draw            int                      `json:"draw"`
-	Data            []map[string]interface{} `json:"data"`
-	RecordsFiltered int64                    `json:"recordsFiltered"`
-	RecordsTotal    int64                    `json:"recordsTotal"`
-}
-
 // get UUID
 func UUID() string {
 	return uuid.New().String()
@@ -184,7 +168,7 @@ func ArrayKey(ar map[string]interface{}) []string {
 	return keys
 }
 
-func CreateData(c *gin.Context, table *gorm.DB, field []string) Response {
+func CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]interface{} {
 
 	defer ErrorLog()
 
@@ -205,13 +189,13 @@ func CreateData(c *gin.Context, table *gorm.DB, field []string) Response {
 		query.Limit(limit).Find(&results)
 	}
 
-	return Response{
-		Status: true,
-		Data:   results,
+	return map[string]interface{}{
+		"status": true,
+		"data": results,
 	}
 }
 
-func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) DataTable {
+func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string]interface{} {
 
 	defer ErrorLog()
 
@@ -279,13 +263,12 @@ func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) DataTable 
 	var results []map[string]interface{}
 
 	query.Limit(limit).Offset(offset).Find(&results).Count(&recordsTotal)
-
-	return  DataTable{
-			Status:          true,
-			Draw:            draw,
-			Data:            results,
-			RecordsFiltered: recordsTotal,
-			RecordsTotal:    recordsTotal,
+	return map[string]interface{}{
+		"status": true,
+		"draw": draw,
+		"data": results,
+		"records_filteres": recordsTotal,
+		"records_total": recordsTotal,
 	}
 }
 
