@@ -78,7 +78,7 @@ func (met Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int32
 	return fmt.Sprintf("%s%s%s", id, char, value)
 }
 
-func (met Jamet) ReadCache(previx string) (bool, Response) {
+func (met Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
 
 	ctx := context.Background()
 
@@ -93,18 +93,15 @@ func (met Jamet) ReadCache(previx string) (bool, Response) {
 
 		val, err := client.Get(ctx, previx).Result()
 		if err != nil {
-			return false, Response{}
+			return false, map[string]interface{}{}
 		}
 
 		convert := Converter(val)
 
-		return true, Response{
-			Status: convert["status"].(bool),
-			Data:   convert["data"],
-		}
+		return true, convert
 
 	} else {
-		return false, Response{}
+		return false, map[string]interface{}{}
 	}
 }
 
