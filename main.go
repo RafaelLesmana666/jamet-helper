@@ -157,12 +157,12 @@ func UUID() string {
 }
 
 // return JSON status true
-func PrintJSON(c *gin.Context, response Response) {
+func PrintJSON(c *gin.Context, response any) {
 	c.Render(http.StatusOK, render.JSON{Data: response})
 }
 
 // return JSON status false
-func EPrintJSON(c *gin.Context, response Response) {
+func EPrintJSON(c *gin.Context, response any) {
 	c.Render(http.StatusBadRequest, render.JSON{Data: response})
 }
 
@@ -214,7 +214,7 @@ func CreateData(c *gin.Context, table *gorm.DB, field []string) Response {
 	}
 }
 
-func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) Response {
+func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) DataTable {
 
 	defer ErrorLog()
 
@@ -283,15 +283,12 @@ func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) Response {
 
 	query.Limit(limit).Offset(offset).Find(&results).Count(&recordsTotal)
 
-	return Response{
-		Status: true,
-		Data: DataTable{
+	return  DataTable{
 			Status:          true,
 			Draw:            draw,
 			Data:            results,
 			RecordsFiltered: recordsTotal,
 			RecordsTotal:    recordsTotal,
-		},
 	}
 }
 
