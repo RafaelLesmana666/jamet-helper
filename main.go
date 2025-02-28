@@ -1,10 +1,12 @@
 package jamethelper
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -191,7 +193,7 @@ func CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]inter
 
 	return map[string]interface{}{
 		"status": true,
-		"data": results,
+		"data":   results,
 	}
 }
 
@@ -264,11 +266,11 @@ func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string
 
 	query.Limit(limit).Offset(offset).Find(&results).Count(&recordsTotal)
 	return map[string]interface{}{
-		"status": true,
-		"draw": draw,
-		"data": results,
+		"status":           true,
+		"draw":             draw,
+		"data":             results,
 		"records_filteres": recordsTotal,
-		"records_total": recordsTotal,
+		"records_total":    recordsTotal,
 	}
 }
 
@@ -389,7 +391,7 @@ func Validation(request map[string]interface{}, format map[string]map[string]str
 	}
 }
 
-func GetRequest(c *gin.Context) []byte{
+func GetRequest(c *gin.Context) []byte {
 
 	param := c.Request.URL.Query()
 
@@ -397,14 +399,13 @@ func GetRequest(c *gin.Context) []byte{
 	if err != nil {
 		panic(err)
 	}
-	// convert := fmt.Sprintf(`[%s]`, data)
-	// var con = []byte(convert)
-	body, err := c.GetRawData()
-	if err != nil {
-		panic(err)
-	}
 
-	return append(mars, body...);
+	buf, _ := io.ReadAll(c.Request.Body)
+	body := io.NopCloser(bytes.NewBuffer(buf))
+	
+	c.Request.Body = body
+
+	return append(mars, buf...)
 }
 
 func Md5(data []byte) string {
