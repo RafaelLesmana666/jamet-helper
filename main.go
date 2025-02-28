@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -23,6 +24,7 @@ import (
 type Jamet struct {
 	Config map[string]*gorm.DB
 	Redis  FormatRedis
+	Log    string
 }
 
 type FormatRedis struct {
@@ -35,6 +37,7 @@ func NewJamet(param Jamet) *Jamet {
 	return &Jamet{
 		Config: param.Config,
 		Redis:  param.Redis,
+		Log:    param.Log,
 	}
 }
 
@@ -50,7 +53,8 @@ func (met Jamet) Connection(conn string) *gorm.DB {
 }
 
 func (met Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int32) string {
-	defer ErrorLog()
+
+	defer met.ErrorLog()
 
 	var getMstRunNum map[string]interface{}
 	db.Table("mst_run_nums").Where(map[string]interface{}{"val_id": id, "val_char": char}).Find(&getMstRunNum)
@@ -95,6 +99,7 @@ func (met Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
 
 		val, err := client.Get(ctx, previx).Result()
 		if err != nil {
+			met.LogError(fmt.Sprintf("Gagal dalam menulis cache %s", previx))
 			return false, map[string]interface{}{}
 		}
 
@@ -109,6 +114,8 @@ func (met Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
 
 func (met Jamet) WriteCache(previx string, data any) {
 
+	defer met.ErrorLog()
+
 	ctx := context.Background()
 
 	format := met.Redis
@@ -122,7 +129,7 @@ func (met Jamet) WriteCache(previx string, data any) {
 
 		jsonStr, err := json.Marshal(data)
 		if err != nil {
-			fmt.Println(err)
+			panic(err)
 		}
 
 		res, err := client.Set(ctx, previx, jsonStr, 0).Result()
@@ -134,45 +141,190 @@ func (met Jamet) WriteCache(previx string, data any) {
 	}
 }
 
-// get UUID
-func UUID() string {
-	return uuid.New().String()
+/**
+new update v0.17 --met.Logging
+
+Debug 🛠 → Buat ngintip daleman kode, kayak investigasi detektif. Biasanya cuma buat developer pas lagi ngoding.
+Info ℹ → Buat kasih tau sesuatu yang biasa aja, kayak "Aplikasi nyala nih!" atau "User login sukses".
+Error ❌ → Ada masalah, tapi masih bisa jalan. Contoh: "Gagal simpen data, coba lagi ya!".
+Fatal ☠ → Masalah gede banget sampe sistemnya KO. Contohnya: "Database ilang! Sistem mati total!".
+Success ✅ → Buat ngumumin sesuatu berhasil, kayak "Orderan lo sukses, siap dikirim!".
+
+"debug"
+"info"
+"error"
+"fatal"
+"success"
+*/
+
+func (met Jamet) LogDebug(message string) {
+
+	defer met.ErrorLog()
+
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("Error reading go.mod:", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	url := met.Log
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":    "debug",
+		"message": message,
+		"module":  strings.Fields(lines[0])[1],
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	met.Logging(url, jsonData)
 }
 
-// return JSON status true
-func PrintJSON(c *gin.Context, response any) {
-	c.Render(http.StatusOK, render.JSON{Data: response})
+func (met Jamet) LogInfo(message string) {
+
+	defer met.ErrorLog()
+
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("Error reading go.mod:", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	url := met.Log
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":    "info",
+		"message": message,
+		"module":  strings.Fields(lines[0])[1],
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	met.Logging(url, jsonData)
 }
 
-// return JSON status false
-func EPrintJSON(c *gin.Context, response any) {
-	c.Render(http.StatusBadRequest, render.JSON{Data: response})
+func (met Jamet) LogError(message string) {
+
+	defer met.ErrorLog()
+
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("Error reading go.mod:", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	url := met.Log
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":    "error",
+		"message": message,
+		"module":  strings.Fields(lines[0])[1],
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	met.Logging(url, jsonData)
+}
+
+func (met Jamet) LogFatal(message string) {
+
+	defer met.ErrorLog()
+
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("Error reading go.mod:", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	url := met.Log
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":    "fatal",
+		"message": message,
+		"module":  strings.Fields(lines[0])[1],
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	met.Logging(url, jsonData)
+}
+
+func (met Jamet) LogSuccess(message string) {
+
+	defer met.ErrorLog()
+
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("Error reading go.mod:", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	url := met.Log
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":    "success",
+		"message": message,
+		"module":  strings.Fields(lines[0])[1],
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	met.Logging(url, jsonData)
+}
+
+func (met Jamet) Logging(url string, body []byte) {
+
+	defer met.ErrorLog()
+
+	// Create a new HTTP POST request.
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		message := fmt.Sprintf("Error creating request: %s", err)
+		panic(message)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		message := fmt.Sprintf("Error sending request: %s", err)
+		panic(message)
+	}
+
+	defer resp.Body.Close()
+
+	log.Println("Response Status:", resp.Status)
 }
 
 // recover log after panic
-func ErrorLog() {
+func (met Jamet) ErrorLog() {
 	message := recover()
 
 	if message != nil {
-		fmt.Println(message)
+		log.Println(message)
+		met.LogFatal(message.(string))
 	} else {
-		fmt.Println("successfully send")
+		fmt.Println("---- have a nice day  ----")
 	}
 }
 
-func ArrayKey(ar map[string]interface{}) []string {
-
-	keys := make([]string, 0, len(ar))
-	for k := range ar {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-func CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]interface{} {
-
-	defer ErrorLog()
+func (met Jamet) CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]interface{} {
 
 	query := table
 	for _, value := range field {
@@ -197,9 +349,9 @@ func CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]inter
 	}
 }
 
-func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string]interface{} {
+func (met Jamet) CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string]interface{} {
 
-	defer ErrorLog()
+	defer met.ErrorLog()
 
 	//MANDATORY
 	draw, err := strconv.Atoi(c.PostForm("draw"))
@@ -266,12 +418,57 @@ func CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string
 
 	query.Limit(limit).Offset(offset).Find(&results).Count(&recordsTotal)
 	return map[string]interface{}{
-		"status":           true,
-		"draw":             draw,
-		"data":             results,
-		"records_filteres": recordsTotal,
-		"records_total":    recordsTotal,
+		"status":          true,
+		"draw":            draw,
+		"data":            results,
+		"recordsFiltered": recordsTotal,
+		"recordsTotal":    recordsTotal,
 	}
+}
+
+
+func (met Jamet) GetRequest(c *gin.Context) []byte {
+
+	defer met.ErrorLog()
+
+	param := c.Request.URL.Query()
+
+	mars, err := json.Marshal(param)
+	if err != nil {
+		panic(err)
+	}
+
+	buf, _ := io.ReadAll(c.Request.Body)
+	body := io.NopCloser(bytes.NewBuffer(buf))
+
+	c.Request.Body = body
+
+	return append(mars, buf...)
+}
+
+// get UUID
+func UUID() string {
+	return uuid.New().String()
+}
+
+// return JSON status true
+func PrintJSON(c *gin.Context, response any) {
+	c.Render(http.StatusOK, render.JSON{Data: response})
+}
+
+// return JSON status false
+func EPrintJSON(c *gin.Context, response any) {
+	c.Render(http.StatusBadRequest, render.JSON{Data: response})
+}
+
+func ArrayKey(ar map[string]interface{}) []string {
+
+	keys := make([]string, 0, len(ar))
+	for k := range ar {
+		keys = append(keys, k)
+	}
+
+	return keys
 }
 
 func InsertData(db *gorm.DB, table string, data any) any {
@@ -279,7 +476,6 @@ func InsertData(db *gorm.DB, table string, data any) any {
 	result := db.Table(table).Create(data).Error
 
 	if result != nil {
-		db.Rollback()
 		if mysqlErr, ok := result.(*mysql.MySQLError); ok {
 
 			return mysqlErr.Message
@@ -391,23 +587,6 @@ func Validation(request map[string]interface{}, format map[string]map[string]str
 	}
 }
 
-func GetRequest(c *gin.Context) []byte {
-
-	param := c.Request.URL.Query()
-
-	mars, err := json.Marshal(param)
-	if err != nil {
-		panic(err)
-	}
-
-	buf, _ := io.ReadAll(c.Request.Body)
-	body := io.NopCloser(bytes.NewBuffer(buf))
-	
-	c.Request.Body = body
-
-	return append(mars, buf...)
-}
-
 func Md5(data []byte) string {
 
 	return fmt.Sprintf("%x", md5.Sum(data))
@@ -423,4 +602,14 @@ func Converter(req any) map[string]interface{} {
 	}
 
 	return objmap[0]
+}
+
+func main() {
+
+	config := Jamet{
+		Log: "https://logservis-dev.cdc-gi.com/log",
+	}
+
+	Jamet := NewJamet(config)
+	Jamet.LogInfo("test")
 }
