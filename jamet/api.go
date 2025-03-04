@@ -422,27 +422,30 @@ func (met *Jamet) LogSuccess(message string) {
 func (met *Jamet) Logging(body []byte) {
 
 	defer met.ErrorLog()
-
 	url := met.Log;
-	// Create a new HTTP POST request.
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		message := fmt.Sprintf("Error creating request: %s", err)
-		panic(message)
+
+	if url != "" {
+		// Create a new HTTP POST request.
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+		if err != nil {
+			message := fmt.Sprintf("Error creating request: %s", err)
+			panic(message)
+		}
+	
+		req.Header.Set("Content-Type", "application/json")
+	
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			message := fmt.Sprintf("Error sending request: %s", err)
+			panic(message)
+		}
+	
+		defer resp.Body.Close()
+	
+		log.Println("Response Status:", resp.Status)
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		message := fmt.Sprintf("Error sending request: %s", err)
-		panic(message)
-	}
-
-	defer resp.Body.Close()
-
-	log.Println("Response Status:", resp.Status)
+	
 }
 
 // end update logging

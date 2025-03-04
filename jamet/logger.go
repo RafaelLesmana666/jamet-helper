@@ -112,41 +112,44 @@ func (l *LoggerConfig) _log(tipe string, message string) {
 
 	defer l.ErrorLog()
 
-	data, err := os.ReadFile("go.mod")
-	if err != nil {
-		fmt.Println("Error reading go.mod:", err)
-		return
+	if l.Url != "" {
+		
+		data, err := os.ReadFile("go.mod")
+		if err != nil {
+			fmt.Println("Error reading go.mod:", err)
+			return
+		}
+	
+		lines := strings.Split(string(data), "\n")
+	
+		jsonData, err := json.Marshal(map[string]interface{}{
+			"type":    tipe,
+			"message": message,
+			"module":  strings.Fields(lines[0])[1],
+		})
+	
+		if err != nil {
+			panic(err)
+		}
+	
+		// Create a new HTTP POST request.
+		req, err := http.NewRequest("POST", l.Url, bytes.NewBuffer(jsonData))
+		if err != nil {
+			message := fmt.Sprintf("Error creating request: %s", err)
+			panic(message)
+		}
+	
+		req.Header.Set("Content-Type", "application/json")
+	
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			message := fmt.Sprintf("Error sending request: %s", err)
+			panic(message)
+		}
+	
+		defer resp.Body.Close()
+	
+		log.Println("Response Status:", resp.Status)
 	}
-
-	lines := strings.Split(string(data), "\n")
-
-	jsonData, err := json.Marshal(map[string]interface{}{
-		"type":    tipe,
-		"message": message,
-		"module":  strings.Fields(lines[0])[1],
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	// Create a new HTTP POST request.
-	req, err := http.NewRequest("POST", l.Url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		message := fmt.Sprintf("Error creating request: %s", err)
-		panic(message)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		message := fmt.Sprintf("Error sending request: %s", err)
-		panic(message)
-	}
-
-	defer resp.Body.Close()
-
-	log.Println("Response Status:", resp.Status)
 }
