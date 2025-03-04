@@ -38,18 +38,18 @@ func NewJamet(param Jamet) *Jamet {
 	}
 }
 
-func (met Jamet) GetData(table string, connection string) *gorm.DB {
+func (met *Jamet) GetData(table string, connection string) *gorm.DB {
 
 	return met.Config[connection].Table(table)
 }
 
-func (met Jamet) Connection(conn string) *gorm.DB {
+func (met *Jamet) Connection(conn string) *gorm.DB {
 	db := met.Config[conn]
 
 	return db.Begin()
 }
 
-func (met Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int32) string {
+func (met *Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int32) string {
 
 	defer met.ErrorLog()
 
@@ -81,19 +81,8 @@ func (met Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int32
 	return fmt.Sprintf("%s%s%s", id, char, value)
 }
 
-// recover log after panic
-func (met Jamet) ErrorLog() {
-	message := recover()
 
-	if message != nil {
-		log.Println(message)
-		met.LogFatal(message.(string))
-	} else {
-		fmt.Println("---- have a nice day  ----")
-	}
-}
-
-func (met Jamet) CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]interface{} {
+func (met *Jamet) CreateData(c *gin.Context, table *gorm.DB, field []string) map[string]interface{} {
 
 	query := table
 	for _, value := range field {
@@ -118,7 +107,7 @@ func (met Jamet) CreateData(c *gin.Context, table *gorm.DB, field []string) map[
 	}
 }
 
-func (met Jamet) CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string]interface{} {
+func (met *Jamet) CreateDataTable(c *gin.Context, table *gorm.DB, search []string) map[string]interface{} {
 
 	defer met.ErrorLog()
 
@@ -195,7 +184,7 @@ func (met Jamet) CreateDataTable(c *gin.Context, table *gorm.DB, search []string
 	}
 }
 
-func (met Jamet) GetRequest(c *gin.Context) []byte {
+func (met *Jamet) GetRequest(c *gin.Context) []byte {
 
 	defer met.ErrorLog()
 
@@ -230,7 +219,7 @@ func InsertData(db *gorm.DB, table string, data any) any {
 }
 
 // CACHE
-func (met Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
+func (met *Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
 
 	ctx := context.Background()
 
@@ -258,7 +247,7 @@ func (met Jamet) ReadCache(previx string) (bool, map[string]interface{}) {
 	}
 }
 
-func (met Jamet) WriteCache(previx string, data any) {
+func (met *Jamet) WriteCache(previx string, data any) {
 
 	defer met.ErrorLog()
 
@@ -287,6 +276,18 @@ func (met Jamet) WriteCache(previx string, data any) {
 	}
 }
 
+// recover log after panic
+func (met *Jamet) ErrorLog() {
+	message := recover()
+
+	if message != nil {
+		log.Println(message)
+		met.LogFatal(message.(string))
+	} else {
+		fmt.Println("---- No Error have a nice day  ----")
+	}
+}
+
 /**
 new update v0.17 --met.Logging
 
@@ -303,9 +304,7 @@ Success ✅ → Buat ngumumin sesuatu berhasil, kayak "Orderan lo sukses, siap�
 "success"
 */
 
-func (met Jamet) LogDebug(message string) {
-
-	defer met.ErrorLog()
+func (met *Jamet) LogDebug(message string) {
 
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
@@ -315,7 +314,6 @@ func (met Jamet) LogDebug(message string) {
 
 	lines := strings.Split(string(data), "\n")
 
-	url := met.Log
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":    "debug",
 		"message": message,
@@ -323,15 +321,13 @@ func (met Jamet) LogDebug(message string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	met.Logging(url, jsonData)
+	met.Logging(jsonData)
 }
 
-func (met Jamet) LogInfo(message string) {
-
-	defer met.ErrorLog()
+func (met *Jamet) LogInfo(message string) {
 
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
@@ -341,7 +337,6 @@ func (met Jamet) LogInfo(message string) {
 
 	lines := strings.Split(string(data), "\n")
 
-	url := met.Log
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":    "info",
 		"message": message,
@@ -349,15 +344,13 @@ func (met Jamet) LogInfo(message string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	met.Logging(url, jsonData)
+	met.Logging(jsonData)
 }
 
-func (met Jamet) LogError(message string) {
-
-	defer met.ErrorLog()
+func (met *Jamet) LogError(message string) {
 
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
@@ -367,7 +360,6 @@ func (met Jamet) LogError(message string) {
 
 	lines := strings.Split(string(data), "\n")
 
-	url := met.Log
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":    "error",
 		"message": message,
@@ -375,15 +367,13 @@ func (met Jamet) LogError(message string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	met.Logging(url, jsonData)
+	met.Logging(jsonData)
 }
 
-func (met Jamet) LogFatal(message string) {
-
-	defer met.ErrorLog()
+func (met *Jamet) LogFatal(message string) {
 
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
@@ -393,7 +383,6 @@ func (met Jamet) LogFatal(message string) {
 
 	lines := strings.Split(string(data), "\n")
 
-	url := met.Log
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":    "fatal",
 		"message": message,
@@ -401,15 +390,13 @@ func (met Jamet) LogFatal(message string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	met.Logging(url, jsonData)
+	met.Logging(jsonData)
 }
 
-func (met Jamet) LogSuccess(message string) {
-
-	defer met.ErrorLog()
+func (met *Jamet) LogSuccess(message string) {
 
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
@@ -419,7 +406,6 @@ func (met Jamet) LogSuccess(message string) {
 
 	lines := strings.Split(string(data), "\n")
 
-	url := met.Log
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":    "success",
 		"message": message,
@@ -427,16 +413,17 @@ func (met Jamet) LogSuccess(message string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	met.Logging(url, jsonData)
+	met.Logging(jsonData)
 }
 
-func (met Jamet) Logging(url string, body []byte) {
+func (met *Jamet) Logging(body []byte) {
 
 	defer met.ErrorLog()
 
+	url := met.Log;
 	// Create a new HTTP POST request.
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
