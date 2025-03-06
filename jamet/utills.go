@@ -41,7 +41,7 @@ func ArrayKey(ar map[string]interface{}) []string {
 
 func Contains(s []string, str string) (bool, string) {
 	for i, v := range s {
-		if strings.Contains(v, str) {
+		if strings.Contains(str, v) {
 			index := fmt.Sprintf("%d", i)
 			return true, index
 		}
