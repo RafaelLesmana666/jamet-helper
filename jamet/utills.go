@@ -169,7 +169,7 @@ func Unrupiah(nilai string) int {
 
 
 /** 
----- UPDATE V0.1.8 ----
+---- UPDATE V0.1.9 ----
 
 * ADD CONVERT ANY DATA TO DATETIME FORMAT PHP
 * GET TIME
