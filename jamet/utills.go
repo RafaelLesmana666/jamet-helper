@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
@@ -165,3 +166,124 @@ func Unrupiah(nilai string) int {
 
 	return result
 }
+
+
+/** 
+---- UPDATE V0.1.8 ----
+
+* ADD CONVERT ANY DATA TO DATETIME FORMAT PHP
+* GET TIME
+* EPOCH TIME
+
+*/
+
+type DateTime struct {
+	Data   any
+	Format string
+}
+
+func DateFormat(data DateTime) (string,int64) {
+
+	if data.Format == "" {
+		data.Format = "Y-m-d H:i:s"
+	}
+
+	s := strings.Split("Y-m-d H:i:s"," ")
+	
+	var (
+		date string
+		hour string
+		format string
+	)
+	
+	date = s[0]
+
+	ds := []string{"-", " ", "/", ""}
+
+	//date
+	status, i := Contains(ds, date)
+	if status {
+
+		index, err := strconv.Atoi(i)
+		if err != nil {
+			panic("error on formatting date time")
+		}
+
+		d := strings.Split(date, string(ds[index]))
+
+		var tmp []string
+		
+		for i := 0;i < len(d);i++ {
+			switch d[i] {
+			case "Y":
+				tmp = append(tmp,"2006")
+			case "y":
+				tmp = append(tmp,"06")
+			case "M":
+				tmp = append(tmp,"Jan")
+			case "m":
+				tmp = append(tmp,"01")
+			case "F":
+				tmp = append(tmp,"January")
+			case "d":
+				tmp = append(tmp,"02")
+			case "D":
+				tmp = append(tmp,"Mon")
+			}
+		}
+		
+		format += strings.Join(tmp,ds[index])
+	}
+
+	
+	if len(s) == 2 {
+		hour = s[1]
+		hs := []string{":", " ", "/", "","-"}
+		
+		format += " ";
+		//hour
+		status, i := Contains(hs, hour)
+		if status {
+	
+			index, err := strconv.Atoi(i)
+			if err != nil {
+				panic("error on formatting date time")
+			}
+	
+			h := strings.Split(hour, string(hs[index]))
+			
+			var tmp []string			
+			for i := 0;i < len(h);i++ {
+				switch h[i] {
+				case "H":
+					tmp = append(tmp,"15")
+				case "h":
+					tmp = append(tmp,"03")
+				case "g":
+					tmp = append(tmp,"3")
+				case "i":
+					tmp = append(tmp,"04")
+				case "s":
+					tmp = append(tmp,"05")
+				}
+			}
+	
+			format += strings.Join(tmp,hs[index])
+		}
+	}
+
+	var result string
+	if data.Data != nil {
+		result = data.Data.(time.Time).Format(format)
+	}else{
+		rn := time.Now()
+		result = rn.Format(format)
+	}
+
+	epoch, err := time.Parse(format,result)
+	if err != nil {
+		panic("error on converting to epoch")
+	}
+
+	return result, epoch.Unix()
+} 
