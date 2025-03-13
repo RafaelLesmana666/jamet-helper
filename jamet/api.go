@@ -54,10 +54,10 @@ func (met *Jamet) SinchronizeID(db *gorm.DB, id string, char string, format int3
 	defer met.ErrorLog()
 
 	var getMstRunNum map[string]interface{}
-	db.Table("mst_run_nums").Where(map[string]interface{}{"val_id": id, "val_char": char}).Find(&getMstRunNum)
+	db.Table("mst_run_nums").Where("val_id = ?",id).Where("val_char = ?",char).Take(&getMstRunNum)
 
 	var value string
-	if len(getMstRunNum) != 0 {
+	if len(getMstRunNum) > 0 {
 
 		num, err := strconv.Atoi(getMstRunNum["val_value"].(string))
 		if err != nil {
